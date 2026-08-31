@@ -1,0 +1,35 @@
+[gd_scene format=3 uid="uid://cfng2aeeemhia"]
+
+[ext_resource type="Script" uid="uid://cfmkc3w7xsy1h" path="res://scripts/Player.gd" id="1_hyk8p"]
+[ext_resource type="Texture2D" uid="uid://b1dm6yk678tah" path="res://icon.svg" id="2_iuonh"]
+
+[node name="Main" type="Node2D" unique_id=2021888728]
+
+[node name="Player" type="CharacterBody2D" parent="." unique_id=1314672497]
+script = ExtResource("1_hyk8p")
+
+[node name="Sprite2D" type="Sprite2D" parent="Player" unique_id=446147217]
+position = Vector2(0, -1)
+texture = ExtResource("2_iuonh")
+
+[node name="AudioMove" type="AudioStreamPlayer" parent="Player" unique_id=2132959482]
+
+[node name="AudioBump" type="AudioStreamPlayer" parent="Player" unique_id=31944095]
+
+[node name="UI" type="CanvasLayer" parent="." unique_id=295922570]
+
+[node name="BotonArriba" type="Button" parent="UI" unique_id=1281554785]
+offset_right = 8.0
+offset_bottom = 8.0
+
+[node name="BotonAbajo" type="Button" parent="UI" unique_id=1483443986]
+offset_right = 8.0
+offset_bottom = 8.0
+
+[node name="BotonIzquierda" type="Button" parent="UI" unique_id=2139120946]
+offset_right = 8.0
+offset_bottom = 8.0
+
+[node name="BotonDerecha" type="Button" parent="UI" unique_id=1171919105]
+offset_right = 8.0
+offset_bottom = 8.0
