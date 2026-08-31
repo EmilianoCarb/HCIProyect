@@ -4,6 +4,7 @@
 [ext_resource type="Texture2D" uid="uid://b1dm6yk678tah" path="res://icon.svg" id="2_iuonh"]
 
 [node name="Main" type="Node2D" unique_id=2021888728]
+position = Vector2(1, 0)
 
 [node name="Player" type="CharacterBody2D" parent="." unique_id=1314672497]
 script = ExtResource("1_hyk8p")

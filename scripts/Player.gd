@@ -4,7 +4,7 @@ extends CharacterBody2D
 @export var grid_size: int = 90
 @export var grid_width: int = 10
 @export var grid_height: int = 10
-@export var move_duration: float = 0.15
+@export var move_duration: float = 0.10
 
 # --- Sonidos
 @export var move_sound: AudioStream
