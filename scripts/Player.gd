@@ -24,19 +24,18 @@ func _ready() -> void:
 	audio_bump.stream = bump_sound
 	position = grid_to_pixel(grid_position)
 
-func _unhandled_input(event: InputEvent) -> void:
+func _process(_delta: float) -> void:
 	if is_moving:
-		return
-
-	if event.is_action_pressed("ui_up"):
+		return 
+		
+	if Input.is_action_pressed("ui_up"):
 		try_move(Vector2i(0, -1))
-	elif event.is_action_pressed("ui_down"):
+	elif Input.is_action_pressed("ui_down"):
 		try_move(Vector2i(0, 1))
-	elif event.is_action_pressed("ui_left"):
+	elif Input.is_action_pressed("ui_left"):
 		try_move(Vector2i(-1, 0))
-	elif event.is_action_pressed("ui_right"):
+	elif Input.is_action_pressed("ui_right"):
 		try_move(Vector2i(1, 0))
-
 
 # --- Funciones públicas para los botones de la UI ---
 func move_up() -> void:
