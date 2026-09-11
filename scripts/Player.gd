@@ -62,15 +62,31 @@ func _ready() -> void:
 	stamina_changed.connect(_on_stamina_changed)
 	_update_stamina_bar_visibility()
 
+# --- Trackpad: joystick virtual (click y arrastre) ---
+var is_trackpad_dragging: bool = false
+var drag_start_pos: Vector2 = Vector2.ZERO
+@export var drag_max_distance: float = 100.0 # px de arrastre para llegar a intensidad máxima
 
 func _input(event: InputEvent) -> void:
-	if event is InputEventScreenDrag or event is InputEventMouseMotion:
-		# Si usas desplazamiento libre o simulado con mouse/touchpad avanzado
-		trackpad_direction = sign(event.relative.x)
-		trackpad_sprint_intensity = clamp(abs(event.relative.x) / 10.0, 0.0, 2.0)
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT:
+		if event.pressed:
+			is_trackpad_dragging = true
+			drag_start_pos = event.position
+			print("Click derecho detectado, inicio: ", drag_start_pos)
+		else:
+			is_trackpad_dragging = false
+			trackpad_direction = 0.0
+			trackpad_sprint_intensity = 0.0
+			print("Click derecho soltado")
+
+	if event is InputEventMouseMotion and is_trackpad_dragging:
+		var delta_x: float = event.position.x - drag_start_pos.x
+		var delta_ratio: float = clamp(delta_x / drag_max_distance, -1.0, 1.0)
+
+		trackpad_direction = sign(delta_ratio) if abs(delta_ratio) > 0.1 else 0.0
+		trackpad_sprint_intensity = clamp(abs(delta_ratio) * 2.0, 0.0, 2.0)
 		trackpad_active_timer = trackpad_active_duration
-
-
+		print("Arrastrando, delta_x: ", delta_x, " direction: ", trackpad_direction)
 func _physics_process(delta: float) -> void:
 	var on_floor: bool = position.y >= screen_size.y - half_height
 
