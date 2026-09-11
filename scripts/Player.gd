@@ -64,14 +64,11 @@ func _ready() -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if event is InputEventPanGesture:
-		var pan: InputEventPanGesture = event
-		trackpad_direction = clamp(pan.delta.x, -1.0, 1.0)
-		trackpad_sprint_intensity = clamp(abs(pan.delta.x) * 3.0, 0.0, 2.0)
+	if event is InputEventScreenDrag or event is InputEventMouseMotion:
+		# Si usas desplazamiento libre o simulado con mouse/touchpad avanzado
+		trackpad_direction = sign(event.relative.x)
+		trackpad_sprint_intensity = clamp(abs(event.relative.x) / 10.0, 0.0, 2.0)
 		trackpad_active_timer = trackpad_active_duration
-		print("Pan gesture: ", pan.delta)
-		if pan.delta.y < -0.4:
-			press_jump()
 
 
 func _physics_process(delta: float) -> void:
