@@ -414,7 +414,8 @@ script = ExtResource("1_hyk8p")
 [node name="AudioBump" type="AudioStreamPlayer" parent="Player" unique_id=31944095]
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="Player" unique_id=1388914072]
-position = Vector2(-4, -2)
+position = Vector2(-28, 3.0000076)
+scale = Vector2(3.0546875, 2.828125)
 sprite_frames = SubResource("SpriteFrames_l3cfh")
 animation = &"combo_1"
 
