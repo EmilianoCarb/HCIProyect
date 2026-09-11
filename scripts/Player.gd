@@ -8,10 +8,10 @@ extends CharacterBody2D
 
 # --- Estamina ---
 @export var max_stamina: float = 100.0
-@export var sprint_cost_per_sec: float = 25.0
-@export var attack_cost: float = 20.0
-@export var stamina_regen_per_sec: float = 15.0
-@export var regen_delay: float = 0.5
+@export var sprint_cost_per_sec: float = 30.0
+@export var attack_cost: float = 25.0
+@export var stamina_regen_per_sec: float = 25.0
+@export var regen_delay: float = 0.2
 
 var stamina: float
 var time_since_use: float = 0.0
@@ -69,7 +69,7 @@ func _input(event: InputEvent) -> void:
 		trackpad_direction = clamp(pan.delta.x, -1.0, 1.0)
 		trackpad_sprint_intensity = clamp(abs(pan.delta.x) * 3.0, 0.0, 2.0)
 		trackpad_active_timer = trackpad_active_duration
-
+		print("Pan gesture: ", pan.delta)
 		if pan.delta.y < -0.4:
 			press_jump()
 
