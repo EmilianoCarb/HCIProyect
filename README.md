@@ -15,7 +15,7 @@ Juego de exploración/acción en 2D: un personaje se mueve libremente por el esc
 - Comparación de experiencia de usuario entre input binario (teclado) vs. input analógico (trackpad) para el mismo sistema de estamina — punto central de análisis de la materia.
 
 ## Estructura del proyecto
-
+´´´
 HCIProyect/
 ├── project.godot
 ├── scenes/
@@ -37,7 +37,7 @@ HCIProyect/
 │ │ └── music/
 │ └── fonts/
 └── docs/ # capturas, créditos, informe
-
+´´´
 
 ## Cómo correr el proyecto
 
