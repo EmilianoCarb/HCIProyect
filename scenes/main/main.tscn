@@ -2,10 +2,41 @@
 
 [ext_resource type="Script" uid="uid://cfmkc3w7xsy1h" path="res://scripts/Player.gd" id="1_hyk8p"]
 [ext_resource type="Texture2D" uid="uid://cvqcfanrp6t8" path="res://assets/sprites/player/fall/male_hero-fall.png" id="2_ow5a4"]
+[ext_resource type="Texture2D" uid="uid://ct17q58f506rb" path="res://assets/sprites/player/attack/male_hero-combo_1.png" id="2_yyfjg"]
+[ext_resource type="Texture2D" uid="uid://crkcntx47uvo7" path="res://assets/sprites/player/attack/male_hero-combo_1_end.png" id="3_b1x3f"]
 [ext_resource type="Texture2D" uid="uid://swhctn74oe3e" path="res://assets/sprites/player/fall/male_hero-fall_loop.png" id="3_hujxm"]
 [ext_resource type="Texture2D" uid="uid://5myvivuulrcd" path="res://assets/sprites/player/idle/male_hero-idle.png" id="4_yyfjg"]
 [ext_resource type="Texture2D" uid="uid://drqdv1fc012gt" path="res://assets/sprites/player/run/male_hero-run.png" id="5_b1x3f"]
 [ext_resource type="Texture2D" uid="uid://cy06aa2eys20l" path="res://assets/sprites/player/walk/male_hero-walk.png" id="6_a8run"]
+[ext_resource type="Texture2D" uid="uid://cf62rkdponhi0" path="res://assets/sprites/player/jump/male_hero-jump.png" id="7_b1x3f"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_a8run"]
+atlas = ExtResource("2_yyfjg")
+region = Rect2(0, 0, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_wcrab"]
+atlas = ExtResource("2_yyfjg")
+region = Rect2(128, 0, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_gohbf"]
+atlas = ExtResource("2_yyfjg")
+region = Rect2(256, 0, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_jucdw"]
+atlas = ExtResource("3_b1x3f")
+region = Rect2(0, 0, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_6miv3"]
+atlas = ExtResource("3_b1x3f")
+region = Rect2(128, 0, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_yisfj"]
+atlas = ExtResource("3_b1x3f")
+region = Rect2(256, 0, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ftp6y"]
+atlas = ExtResource("3_b1x3f")
+region = Rect2(384, 0, 128, 128)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_ouso4"]
 atlas = ExtResource("2_ow5a4")
@@ -74,6 +105,30 @@ region = Rect2(1024, 0, 128, 128)
 [sub_resource type="AtlasTexture" id="AtlasTexture_0bhws"]
 atlas = ExtResource("4_yyfjg")
 region = Rect2(1152, 0, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_pd34m"]
+atlas = ExtResource("7_b1x3f")
+region = Rect2(0, 0, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_qjyke"]
+atlas = ExtResource("7_b1x3f")
+region = Rect2(128, 0, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_o8kno"]
+atlas = ExtResource("7_b1x3f")
+region = Rect2(256, 0, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_7ahn0"]
+atlas = ExtResource("7_b1x3f")
+region = Rect2(384, 0, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_vyrcm"]
+atlas = ExtResource("7_b1x3f")
+region = Rect2(512, 0, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_3ql0k"]
+atlas = ExtResource("7_b1x3f")
+region = Rect2(640, 0, 128, 128)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_62atk"]
 atlas = ExtResource("5_b1x3f")
@@ -157,10 +212,36 @@ region = Rect2(1152, 0, 128, 128)
 
 [sub_resource type="SpriteFrames" id="SpriteFrames_l3cfh"]
 animations = [{
-"frames": [],
-"loop": 1,
-"name": &"default",
-"speed": 5.0
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_a8run")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_wcrab")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_gohbf")
+}],
+"loop": 0,
+"name": &"combo_1",
+"speed": 20.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_jucdw")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_6miv3")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_yisfj")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_ftp6y")
+}],
+"loop": 0,
+"name": &"combo_1_end",
+"speed": 24.0
 }, {
 "frames": [{
 "duration": 1.0,
@@ -177,7 +258,7 @@ animations = [{
 }],
 "loop": 1,
 "name": &"fall",
-"speed": 5.0
+"speed": 4.0
 }, {
 "frames": [{
 "duration": 1.0,
@@ -191,7 +272,7 @@ animations = [{
 }],
 "loop": 1,
 "name": &"fall_loop",
-"speed": 5.0
+"speed": 3.0
 }, {
 "frames": [{
 "duration": 1.0,
@@ -224,8 +305,31 @@ animations = [{
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_0bhws")
 }],
-"loop": 1,
+"loop": 0,
 "name": &"idle",
+"speed": 10.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_pd34m")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_qjyke")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_o8kno")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_7ahn0")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_vyrcm")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_3ql0k")
+}],
+"loop": 1,
+"name": &"jump",
 "speed": 5.0
 }, {
 "frames": [{
@@ -261,7 +365,7 @@ animations = [{
 }],
 "loop": 1,
 "name": &"run",
-"speed": 5.0
+"speed": 10.0
 }, {
 "frames": [{
 "duration": 1.0,
@@ -294,9 +398,9 @@ animations = [{
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_f4j1x")
 }],
-"loop": 1,
+"loop": 0,
 "name": &"walk",
-"speed": 5.0
+"speed": 10.0
 }]
 
 [node name="Main" type="Node2D" unique_id=2021888728]
@@ -310,23 +414,56 @@ script = ExtResource("1_hyk8p")
 [node name="AudioBump" type="AudioStreamPlayer" parent="Player" unique_id=31944095]
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="Player" unique_id=1388914072]
+position = Vector2(-4, -2)
 sprite_frames = SubResource("SpriteFrames_l3cfh")
-animation = &"walk"
+animation = &"combo_1"
+
+[node name="StaminaBar" type="ProgressBar" parent="Player" unique_id=878462334]
+custom_minimum_size = Vector2(128, 24)
+custom_maximum_size = Vector2(200, 24)
+anchors_preset = -1
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -50.0
+offset_top = -90.0
+offset_right = 78.0
+offset_bottom = -66.0
+grow_horizontal = 2
 
 [node name="UI" type="CanvasLayer" parent="." unique_id=295922570]
 
-[node name="BotonArriba" type="Button" parent="UI" unique_id=1281554785]
+[node name="Control" type="Control" parent="UI" unique_id=730796767]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="BotonArriba" type="Button" parent="UI/Control" unique_id=1281554785]
+layout_mode = 0
 offset_right = 8.0
 offset_bottom = 8.0
 
-[node name="BotonAbajo" type="Button" parent="UI" unique_id=1483443986]
+[node name="BotonAbajo" type="Button" parent="UI/Control" unique_id=1483443986]
+layout_mode = 0
 offset_right = 8.0
 offset_bottom = 8.0
 
-[node name="BotonIzquierda" type="Button" parent="UI" unique_id=2139120946]
+[node name="BotonIzquierda" type="Button" parent="UI/Control" unique_id=2139120946]
+layout_mode = 0
 offset_right = 8.0
 offset_bottom = 8.0
 
-[node name="BotonDerecha" type="Button" parent="UI" unique_id=1171919105]
+[node name="BotonDerecha" type="Button" parent="UI/Control" unique_id=1171919105]
+layout_mode = 0
+offset_right = 8.0
+offset_bottom = 8.0
+
+[node name="BotonSprint" type="Button" parent="UI/Control" unique_id=1887287070]
+layout_mode = 0
+offset_right = 8.0
+offset_bottom = 8.0
+
+[node name="BotonAtaque" type="Button" parent="UI/Control" unique_id=934177053]
+layout_mode = 0
 offset_right = 8.0
 offset_bottom = 8.0
