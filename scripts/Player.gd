@@ -1,84 +1,94 @@
 extends CharacterBody2D
 
-# --- Configuración de la cuadrícula ---
-@export var grid_size: int = 90
-@export var grid_width: int = 10
-@export var grid_height: int = 10
-@export var move_duration: float = 0.10
+# --- Movimiento ---
+@export var speed: float = 300.0
+@export var jump_force: float = -600.0
+@export var gravity: float = 1500.0
 
-# --- Sonidos
+# --- Sonidos ---
 @export var move_sound: AudioStream
 @export var bump_sound: AudioStream
-
-
 
 # --- Referencias a nodos hijos ---
 @onready var audio_move: AudioStreamPlayer = $AudioMove
 @onready var audio_bump: AudioStreamPlayer = $AudioBump
+@onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
 
-var grid_position: Vector2i = Vector2i(2, 2)
-var is_moving: bool = false
+var screen_size: Vector2
+var half_height: float = 64.0 # 128px de alto / 2
+var half_width: float = 40.0  # ajusta según el "cuerpo" real del sprite (no todo el frame suele estar ocupado)
+
+# --- Input alternativo desde botones UI ---
+var ui_left_pressed: bool = false
+var ui_right_pressed: bool = false
+var ui_jump_requested: bool = false
 
 func _ready() -> void:
 	audio_move.stream = move_sound
 	audio_bump.stream = bump_sound
-	position = grid_to_pixel(grid_position)
+	screen_size = get_viewport_rect().size
+	sprite.play("idle")
 
-func _process(_delta: float) -> void:
-	if is_moving:
-		return 
-		
-	if Input.is_action_pressed("ui_up"):
-		try_move(Vector2i(0, -1))
-	elif Input.is_action_pressed("ui_down"):
-		try_move(Vector2i(0, 1))
-	elif Input.is_action_pressed("ui_left"):
-		try_move(Vector2i(-1, 0))
-	elif Input.is_action_pressed("ui_right"):
-		try_move(Vector2i(1, 0))
+func _physics_process(delta: float) -> void:
+	var on_floor: bool = position.y >= screen_size.y - half_height
 
-# --- Funciones públicas para los botones de la UI ---
-func move_up() -> void:
-	if not is_moving:
-		try_move(Vector2i(0, -1))
+	# --- Gravedad ---
+	if not on_floor:
+		velocity.y += gravity * delta
+	else:
+		velocity.y = 0
 
-func move_down() -> void:
-	if not is_moving:
-		try_move(Vector2i(0, 1))
+	# --- Movimiento horizontal (teclado + botones UI) ---
+	var direction: float = 0.0
+	if Input.is_action_pressed("ui_left") or ui_left_pressed:
+		direction -= 1.0
+	if Input.is_action_pressed("ui_right") or ui_right_pressed:
+		direction += 1.0
 
-func move_left() -> void:
-	if not is_moving:
-		try_move(Vector2i(-1, 0))
+	velocity.x = direction * speed
 
-func move_right() -> void:
-	if not is_moving:
-		try_move(Vector2i(1, 0))
+	# --- Salto (teclado + botón UI) ---
+	var wants_jump: bool = Input.is_action_just_pressed("ui_up") or ui_jump_requested
+	ui_jump_requested = false
+
+	if wants_jump and on_floor:
+		velocity.y = jump_force
+		_play_move()
+
+	move_and_slide()
+	_clamp_to_screen()
+	_update_animation(direction, on_floor)
 
 
-# --- Lógica central de movimiento ---
-func try_move(direction: Vector2i) -> void:
-	var new_pos: Vector2i = grid_position + direction
+func _clamp_to_screen() -> void:
+	var clamped_x: float = clamp(position.x, half_width, screen_size.x - half_width)
+	var clamped_y: float = clamp(position.y, half_height, screen_size.y - half_height)
 
-	if new_pos.x < 0 or new_pos.x >= grid_width or new_pos.y < 0 or new_pos.y >= grid_height:
+	var hit_edge: bool = clamped_x != position.x or clamped_y != position.y
+
+	position.x = clamped_x
+	position.y = clamped_y
+
+	if position.y >= screen_size.y - half_height:
+		velocity.y = 0
+
+	if hit_edge:
 		_play_bump()
-		return
 
-	grid_position = new_pos
-	_slide_to(grid_position)
-
-
-func _slide_to(target_grid_pos: Vector2i) -> void:
-	is_moving = true
-	_play_move()
-	
-	var tween: Tween = create_tween()
-	tween.tween_property(self, "position", grid_to_pixel(target_grid_pos), move_duration) \
-		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-	tween.finished.connect(func(): is_moving = false)
-
-
-func grid_to_pixel(g: Vector2i) -> Vector2:
-	return Vector2(g.x * grid_size, g.y * grid_size)
+func _update_animation(direction: float, on_floor: bool) -> void:
+	if not on_floor:
+		if velocity.y < 0:
+			sprite.play("jump")
+		else:
+			if sprite.animation != "fall" and sprite.animation != "fall_loop":
+				sprite.play("fall")
+			elif sprite.animation == "fall" and sprite.frame == sprite.sprite_frames.get_frame_count("fall") - 1:
+				sprite.play("fall_loop")
+	elif direction != 0.0:
+		sprite.play("walk")
+		sprite.flip_h = direction < 0
+	else:
+		sprite.play("idle")
 
 
 func _play_move() -> void:
@@ -88,3 +98,20 @@ func _play_move() -> void:
 func _play_bump() -> void:
 	if audio_bump.stream:
 		audio_bump.play()
+
+
+# --- Funciones llamadas por los botones de la UI ---
+func press_left() -> void:
+	ui_left_pressed = true
+
+func release_left() -> void:
+	ui_left_pressed = false
+
+func press_right() -> void:
+	ui_right_pressed = true
+
+func release_right() -> void:
+	ui_right_pressed = false
+
+func press_jump() -> void:
+	ui_jump_requested = true
