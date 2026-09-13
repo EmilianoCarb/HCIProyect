@@ -46,6 +46,16 @@ var trackpad_direction: float = 0.0
 var trackpad_active_timer: float = 0.0
 @export var trackpad_active_duration: float = 0.15
 
+# --- Trackpad: joystick virtual (click y arrastre) ---
+var is_trackpad_dragging: bool = false
+var drag_start_pos: Vector2 = Vector2.ZERO
+var drag_start_time: float = 0.0
+var has_jumped_this_drag: bool = false
+@export var drag_max_distance: float = 100.0
+@export var jump_drag_threshold: float = -50.0
+@export var tap_max_duration: float = 0.2
+@export var tap_max_movement: float = 10.0
+
 
 func _ready() -> void:
 	audio_move.stream = move_sound
@@ -58,39 +68,58 @@ func _ready() -> void:
 	stamina_bar.min_value = 0
 	stamina_bar.max_value = max_stamina
 	stamina_bar.value = stamina
-	stamina_bar.top_level = true # ignora rotación/escala del Player, solo sigue posición
+	stamina_bar.top_level = true
 	stamina_changed.connect(_on_stamina_changed)
 	_update_stamina_bar_visibility()
 
 
 func _input(event: InputEvent) -> void:
-	if event is InputEventPanGesture:
-		var pan: InputEventPanGesture = event
-		trackpad_direction = clamp(pan.delta.x, -1.0, 1.0)
-		trackpad_sprint_intensity = clamp(abs(pan.delta.x) * 3.0, 0.0, 2.0)
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		if event.pressed:
+			is_trackpad_dragging = true
+			drag_start_pos = event.position
+			drag_start_time = Time.get_ticks_msec() / 1000.0
+			has_jumped_this_drag = false
+		else:
+			is_trackpad_dragging = false
+
+			var duration: float = (Time.get_ticks_msec() / 1000.0) - drag_start_time
+			var movement: float = event.position.distance_to(drag_start_pos)
+
+			if duration <= tap_max_duration and movement <= tap_max_movement:
+				try_attack()
+
+			trackpad_direction = 0.0
+			trackpad_sprint_intensity = 0.0
+
+	if event is InputEventMouseMotion and is_trackpad_dragging:
+		var delta_x: float = event.position.x - drag_start_pos.x
+		var delta_y: float = event.position.y - drag_start_pos.y
+		var delta_ratio: float = clamp(delta_x / drag_max_distance, -1.0, 1.0)
+
+		trackpad_direction = sign(delta_ratio) if abs(delta_ratio) > 0.1 else 0.0
+		trackpad_sprint_intensity = clamp(abs(delta_ratio) * 2.0, 0.0, 2.0)
 		trackpad_active_timer = trackpad_active_duration
-		print("Pan gesture: ", pan.delta)
-		if pan.delta.y < -0.4:
+
+		if delta_y < jump_drag_threshold and not has_jumped_this_drag:
 			press_jump()
+			has_jumped_this_drag = true
 
 
 func _physics_process(delta: float) -> void:
 	var on_floor: bool = position.y >= screen_size.y - half_height
 
-	# --- Timer del trackpad ---
 	if trackpad_active_timer > 0.0:
 		trackpad_active_timer -= delta
 	else:
 		trackpad_direction = 0.0
 		trackpad_sprint_intensity = 0.0
 
-	# --- Gravedad ---
 	if not on_floor:
 		velocity.y += gravity * delta
 	else:
 		velocity.y = 0
 
-	# --- Dirección horizontal (teclado + botones UI + trackpad) ---
 	var direction: float = 0.0
 	if Input.is_action_pressed("ui_left") or ui_left_pressed:
 		direction -= 1.0
@@ -99,7 +128,6 @@ func _physics_process(delta: float) -> void:
 	if trackpad_direction != 0.0:
 		direction = trackpad_direction
 
-	# --- Intento de sprint ---
 	var wants_sprint: bool = Input.is_action_pressed("sprint") or ui_sprint_pressed or trackpad_sprint_intensity > 0.1
 	var sprint_intensity: float = 1.0 if (Input.is_action_pressed("sprint") or ui_sprint_pressed) else trackpad_sprint_intensity
 
@@ -108,7 +136,6 @@ func _physics_process(delta: float) -> void:
 	var current_speed: float = sprint_speed if is_sprinting else speed
 	velocity.x = direction * current_speed
 
-	# --- Estamina: gasto/regen ---
 	if is_sprinting:
 		stamina -= sprint_cost_per_sec * sprint_intensity * delta
 		time_since_use = 0.0
@@ -120,14 +147,12 @@ func _physics_process(delta: float) -> void:
 	stamina = clamp(stamina, 0.0, max_stamina)
 	stamina_changed.emit(stamina, max_stamina)
 
-	# --- Salto ---
 	var wants_jump: bool = Input.is_action_just_pressed("ui_up") or ui_jump_requested
 	ui_jump_requested = false
 	if wants_jump and on_floor:
 		velocity.y = jump_force
 		_play_move()
 
-	# --- Ataque ---
 	if Input.is_action_just_pressed("attack") and not is_attacking:
 		try_attack()
 
@@ -197,7 +222,6 @@ func _play_bump() -> void:
 		audio_bump.play()
 
 
-# --- Barra de estamina flotante ---
 func _on_stamina_changed(current: float, _max_value: float) -> void:
 	stamina_bar.value = current
 	_update_stamina_bar_visibility()
@@ -208,11 +232,9 @@ func _update_stamina_bar_visibility() -> void:
 
 
 func _update_stamina_bar_position() -> void:
-	# como es top_level, hay que posicionarla manual en coordenadas globales
 	stamina_bar.global_position = global_position + Vector2(-stamina_bar.size.x / 2, -90)
 
 
-# --- Funciones llamadas por los botones de la UI ---
 func press_left() -> void:
 	ui_left_pressed = true
 func release_left() -> void:
