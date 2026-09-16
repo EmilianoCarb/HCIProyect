@@ -45,9 +45,17 @@ var ui_sprint_pressed: bool = false
 # ============================================================
 # En Linux (libinput/CachyOS) y Windows, el swipe de 2 dedos NO llega
 # como InputEventPanGesture confiable: el compositor lo traduce a
-# eventos de rueda (MOUSE_BUTTON_WHEEL_*). Son ticks discretos, así
-# que simulamos intensidad analógica acumulando ticks y dejándolos
-# decaer con el tiempo.
+# eventos de rueda (MOUSE_BUTTON_WHEEL_*).
+#
+# CLAVE: cada tick de wheel representa una unidad de DISTANCIA deslizada,
+# no de velocidad. Un swipe lento pero largo genera tantos ticks como uno
+# rápido y corto, así que acumular ticks por distancia terminaba forzando
+# sprint sin importar qué tan suave fuera el gesto.
+#
+# Fix: en vez de acumular, medimos el TIEMPO ENTRE TICKS consecutivos.
+# Ticks muy seguidos (dt chico) = dedo moviéndose rápido = sprint.
+# Ticks espaciados (dt grande) = dedo moviéndose despacio = caminar.
+# Esto sí correlaciona con la velocidad real del swipe.
 #
 # "trackpad_natural_scroll" debe coincidir con la config del SO
 # ("Invertir la dirección del desplazamiento" en Preferencias del
@@ -56,13 +64,20 @@ var ui_sprint_pressed: bool = false
 @export var trackpad_natural_scroll: bool = true
 
 var trackpad_h_intensity: float = 0.0   # -1.0 (izq) a 1.0 (der)
+var trackpad_h_last_tick_time: float = 0.0
 
-# Boost más chico + decay más rápido = zona de "caminar" perceptible
-# antes de cruzar a "sprint" (antes: boost 0.35 / decay 2.0 hacían que
-# 2 ticks ya dispararan sprint y la intensidad tardara en bajar).
-@export var trackpad_tick_boost: float = 0.15
-@export var trackpad_decay_per_sec: float = 3.5
-@export var trackpad_direction_deadzone: float = 0.15
+# Ventana de tiempo entre ticks que se considera "swipe rápido" (sprint).
+# dt <= esto -> intensidad máxima. dt >= esto -> intensidad mínima (walk).
+@export var trackpad_fast_swipe_window: float = 0.12
+
+# Intensidad mínima asignada a un tick aislado o lento, para que un
+# swipe suave siga contando como "caminar" y no quede en cero.
+@export var trackpad_min_tick_intensity: float = 0.3
+
+# Decay: baja la intensidad a 0 si dejaste de swipear (sin ticks nuevos).
+@export var trackpad_decay_per_sec: float = 2.0
+
+@export var trackpad_direction_deadzone: float = 0.1
 @export var trackpad_sprint_threshold: float = 0.75
 
 var trackpad_v_ticks: int = 0
@@ -107,17 +122,26 @@ func _input(event: InputEvent) -> void:
 			is_up = idx == MOUSE_BUTTON_WHEEL_DOWN
 			is_down = idx == MOUSE_BUTTON_WHEEL_UP
 
-		if is_right:
-			trackpad_h_intensity = clamp(trackpad_h_intensity + trackpad_tick_boost, -1.0, 1.0)
-			print("Trackpad: swipe derecha, intensidad=", trackpad_h_intensity)
-		elif is_left:
-			trackpad_h_intensity = clamp(trackpad_h_intensity - trackpad_tick_boost, -1.0, 1.0)
-			print("Trackpad: swipe izquierda, intensidad=", trackpad_h_intensity)
-		elif is_up:
+		if is_right or is_left:
 			var now: float = Time.get_ticks_msec() / 1000.0
-			if now - trackpad_v_last_tick_time > trackpad_jump_tick_window:
+			var dt: float = now - trackpad_h_last_tick_time
+			trackpad_h_last_tick_time = now
+			if dt <= 0.0:
+				dt = 0.001
+
+			# t = 0 -> ticks muy seguidos (rápido) | t = 1 -> ticks espaciados (lento)
+			var t: float = clamp(dt / trackpad_fast_swipe_window, 0.0, 1.0)
+			var instant_intensity: float = lerp(1.0, trackpad_min_tick_intensity, t)
+			var dir_sign: float = 1.0 if is_right else -1.0
+
+			trackpad_h_intensity = dir_sign * instant_intensity
+			print("Trackpad: swipe ", ("derecha" if is_right else "izquierda"), ", dt=", dt, ", intensidad=", trackpad_h_intensity)
+
+		elif is_up:
+			var now2: float = Time.get_ticks_msec() / 1000.0
+			if now2 - trackpad_v_last_tick_time > trackpad_jump_tick_window:
 				trackpad_v_ticks = 0
-			trackpad_v_last_tick_time = now
+			trackpad_v_last_tick_time = now2
 			trackpad_v_ticks += 1
 			print("Trackpad: tick arriba, acumulado=", trackpad_v_ticks)
 			if trackpad_v_ticks >= trackpad_jump_tick_threshold:
@@ -145,7 +169,7 @@ func _physics_process(delta: float) -> void:
 		direction -= 1.0
 	if Input.is_action_pressed("ui_right") or ui_right_pressed:
 		direction += 1.0
-	if abs(trackpad_h_intensity) > trackpad_direction_deadzone and direction == 0.0:
+	if abs(trackpad_h_intensity) >= trackpad_direction_deadzone and direction == 0.0:
 		direction = sign(trackpad_h_intensity)
 		using_trackpad = true
 
@@ -155,7 +179,7 @@ func _physics_process(delta: float) -> void:
 	is_sprinting = wants_sprint and direction != 0.0 and stamina > 0.0
 
 	# Velocidad: el trackpad interpola de forma continua entre "speed" y
-	# "sprint_speed" según la intensidad del swipe (entrada analógica real).
+	# "sprint_speed" según la intensidad calculada por velocidad de swipe.
 	# El teclado/botones siguen siendo un salto discreto walk -> run (entrada
 	# binaria). Esta diferencia es intencional: es justo el contraste que
 	# se compara en la evaluación de HCI.
