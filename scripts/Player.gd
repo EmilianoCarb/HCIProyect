@@ -45,12 +45,25 @@ var ui_sprint_pressed: bool = false
 # ============================================================
 # En Linux (libinput/CachyOS) y Windows, el swipe de 2 dedos NO llega
 # como InputEventPanGesture confiable: el compositor lo traduce a
-# eventos de rueda (MOUSE_BUTTON_WHEEL_*). Estos son ticks discretos,
-# así que simulamos intensidad analógica acumulando ticks y dejándolos
+# eventos de rueda (MOUSE_BUTTON_WHEEL_*). Son ticks discretos, así
+# que simulamos intensidad analógica acumulando ticks y dejándolos
 # decaer con el tiempo.
+#
+# "trackpad_natural_scroll" debe coincidir con la config del SO
+# ("Invertir la dirección del desplazamiento" en Preferencias del
+# Panel táctil). Godot no expone esta preferencia por API, así que
+# queda como toggle manual expuesto en el Inspector.
+@export var trackpad_natural_scroll: bool = true
+
 var trackpad_h_intensity: float = 0.0   # -1.0 (izq) a 1.0 (der)
-@export var trackpad_tick_boost: float = 0.35
-@export var trackpad_decay_per_sec: float = 2.0
+
+# Boost más chico + decay más rápido = zona de "caminar" perceptible
+# antes de cruzar a "sprint" (antes: boost 0.35 / decay 2.0 hacían que
+# 2 ticks ya dispararan sprint y la intensidad tardara en bajar).
+@export var trackpad_tick_boost: float = 0.15
+@export var trackpad_decay_per_sec: float = 3.5
+@export var trackpad_direction_deadzone: float = 0.15
+@export var trackpad_sprint_threshold: float = 0.75
 
 var trackpad_v_ticks: int = 0
 var trackpad_v_last_tick_time: float = 0.0
@@ -76,25 +89,42 @@ func _ready() -> void:
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed:
-		match event.button_index:
-			MOUSE_BUTTON_WHEEL_RIGHT:
-				trackpad_h_intensity = clamp(trackpad_h_intensity + trackpad_tick_boost, -1.0, 1.0)
-				print("Trackpad: swipe derecha, intensidad=", trackpad_h_intensity)
-			MOUSE_BUTTON_WHEEL_LEFT:
-				trackpad_h_intensity = clamp(trackpad_h_intensity - trackpad_tick_boost, -1.0, 1.0)
-				print("Trackpad: swipe izquierda, intensidad=", trackpad_h_intensity)
-			MOUSE_BUTTON_WHEEL_UP:
-				var now: float = Time.get_ticks_msec() / 1000.0
-				if now - trackpad_v_last_tick_time > trackpad_jump_tick_window:
-					trackpad_v_ticks = 0
-				trackpad_v_last_tick_time = now
-				trackpad_v_ticks += 1
-				print("Trackpad: tick arriba, acumulado=", trackpad_v_ticks)
-				if trackpad_v_ticks >= trackpad_jump_tick_threshold:
-					press_jump()
-					trackpad_v_ticks = 0
-			MOUSE_BUTTON_WHEEL_DOWN:
-				trackpad_v_ticks = 0  # cortar racha si el gesto cambia de dirección
+		var idx: int = event.button_index
+
+		var is_right: bool
+		var is_left: bool
+		var is_up: bool
+		var is_down: bool
+
+		if not trackpad_natural_scroll:
+			is_right = idx == MOUSE_BUTTON_WHEEL_RIGHT
+			is_left = idx == MOUSE_BUTTON_WHEEL_LEFT
+			is_up = idx == MOUSE_BUTTON_WHEEL_UP
+			is_down = idx == MOUSE_BUTTON_WHEEL_DOWN
+		else:
+			is_right = idx == MOUSE_BUTTON_WHEEL_LEFT
+			is_left = idx == MOUSE_BUTTON_WHEEL_RIGHT
+			is_up = idx == MOUSE_BUTTON_WHEEL_DOWN
+			is_down = idx == MOUSE_BUTTON_WHEEL_UP
+
+		if is_right:
+			trackpad_h_intensity = clamp(trackpad_h_intensity + trackpad_tick_boost, -1.0, 1.0)
+			print("Trackpad: swipe derecha, intensidad=", trackpad_h_intensity)
+		elif is_left:
+			trackpad_h_intensity = clamp(trackpad_h_intensity - trackpad_tick_boost, -1.0, 1.0)
+			print("Trackpad: swipe izquierda, intensidad=", trackpad_h_intensity)
+		elif is_up:
+			var now: float = Time.get_ticks_msec() / 1000.0
+			if now - trackpad_v_last_tick_time > trackpad_jump_tick_window:
+				trackpad_v_ticks = 0
+			trackpad_v_last_tick_time = now
+			trackpad_v_ticks += 1
+			print("Trackpad: tick arriba, acumulado=", trackpad_v_ticks)
+			if trackpad_v_ticks >= trackpad_jump_tick_threshold:
+				press_jump()
+				trackpad_v_ticks = 0
+		elif is_down:
+			trackpad_v_ticks = 0  # cortar racha si el gesto cambia de dirección
 
 
 func _physics_process(delta: float) -> void:
@@ -109,21 +139,35 @@ func _physics_process(delta: float) -> void:
 		velocity.y = 0
 
 	var direction: float = 0.0
+	var using_trackpad: bool = false
+
 	if Input.is_action_pressed("ui_left") or ui_left_pressed:
 		direction -= 1.0
 	if Input.is_action_pressed("ui_right") or ui_right_pressed:
 		direction += 1.0
-	if abs(trackpad_h_intensity) > 0.05:
-		direction = trackpad_h_intensity
+	if abs(trackpad_h_intensity) > trackpad_direction_deadzone and direction == 0.0:
+		direction = sign(trackpad_h_intensity)
+		using_trackpad = true
 
-	var wants_sprint: bool = Input.is_action_pressed("sprint") or ui_sprint_pressed or abs(trackpad_h_intensity) > 0.6
+	var wants_sprint: bool = Input.is_action_pressed("sprint") or ui_sprint_pressed or abs(trackpad_h_intensity) > trackpad_sprint_threshold
 	var sprint_intensity: float = 1.0 if (Input.is_action_pressed("sprint") or ui_sprint_pressed) else abs(trackpad_h_intensity)
 
 	is_sprinting = wants_sprint and direction != 0.0 and stamina > 0.0
 
-	var current_speed: float = sprint_speed if is_sprinting else speed
+	# Velocidad: el trackpad interpola de forma continua entre "speed" y
+	# "sprint_speed" según la intensidad del swipe (entrada analógica real).
+	# El teclado/botones siguen siendo un salto discreto walk -> run (entrada
+	# binaria). Esta diferencia es intencional: es justo el contraste que
+	# se compara en la evaluación de HCI.
+	var current_speed: float
+	if using_trackpad:
+		current_speed = lerp(speed, sprint_speed, abs(trackpad_h_intensity))
+	else:
+		current_speed = sprint_speed if is_sprinting else speed
 	velocity.x = direction * current_speed
 
+	# El gasto de estamina solo ocurre una vez cruzado el umbral real de
+	# sprint (is_sprinting), no por el solo hecho de moverse con el trackpad.
 	if is_sprinting:
 		stamina -= sprint_cost_per_sec * sprint_intensity * delta
 		time_since_use = 0.0
@@ -186,6 +230,13 @@ func _update_animation(direction: float, on_floor: bool) -> void:
 	if is_attacking:
 		return
 
+	# El flip de sprite se actualiza siempre que haya dirección, esté o no
+	# en el aire. Antes esto solo pasaba en la rama de piso, así que si
+	# cambiabas de sentido en medio de un salto, el personaje seguía
+	# mirando hacia donde había saltado hasta aterrizar.
+	if direction != 0.0:
+		sprite.flip_h = direction < 0
+
 	if not on_floor:
 		if velocity.y < 0:
 			sprite.play("jump")
@@ -196,7 +247,6 @@ func _update_animation(direction: float, on_floor: bool) -> void:
 				sprite.play("fall_loop")
 	elif direction != 0.0:
 		sprite.play("run" if is_sprinting else "walk")
-		sprite.flip_h = direction < 0
 	else:
 		sprite.play("idle")
 

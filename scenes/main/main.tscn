@@ -771,8 +771,8 @@ position = Vector2(1, 0)
 scroll_scale = Vector2(0.2, 0.2)
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="FondoCielo" unique_id=1987378839]
-position = Vector2(680.5, 77.5)
-scale = Vector2(7.75, 7.75)
+position = Vector2(850, -22.99997)
+scale = Vector2(6.6850004, 6.6850004)
 sprite_frames = SubResource("SpriteFrames_npx0a")
 frame = 49
 frame_progress = 1.0
@@ -792,8 +792,8 @@ script = ExtResource("1_hyk8p")
 [node name="AudioBump" type="AudioStreamPlayer" parent="Player" unique_id=31944095]
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="Player" unique_id=1388914072]
-position = Vector2(1, -0.99998474)
-scale = Vector2(3.0546875, 2.828125)
+position = Vector2(2, -32)
+scale = Vector2(1.2128906, 1.122932)
 sprite_frames = SubResource("SpriteFrames_l3cfh")
 animation = &"combo_1"
 
