@@ -40,21 +40,22 @@ var ui_right_pressed: bool = false
 var ui_jump_requested: bool = false
 var ui_sprint_pressed: bool = false
 
-# --- Input de trackpad (intensidad analógica) ---
-var trackpad_sprint_intensity: float = 0.0
-var trackpad_direction: float = 0.0
-var trackpad_active_timer: float = 0.0
-@export var trackpad_active_duration: float = 0.15
+# ============================================================
+# --- Trackpad: swipe de 2 dedos vía wheel events (SIN click) ---
+# ============================================================
+# En Linux (libinput/CachyOS) y Windows, el swipe de 2 dedos NO llega
+# como InputEventPanGesture confiable: el compositor lo traduce a
+# eventos de rueda (MOUSE_BUTTON_WHEEL_*). Estos son ticks discretos,
+# así que simulamos intensidad analógica acumulando ticks y dejándolos
+# decaer con el tiempo.
+var trackpad_h_intensity: float = 0.0   # -1.0 (izq) a 1.0 (der)
+@export var trackpad_tick_boost: float = 0.35
+@export var trackpad_decay_per_sec: float = 2.0
 
-# --- Trackpad: joystick virtual (click y arrastre) ---
-var is_trackpad_dragging: bool = false
-var drag_start_pos: Vector2 = Vector2.ZERO
-var drag_start_time: float = 0.0
-var has_jumped_this_drag: bool = false
-@export var drag_max_distance: float = 100.0
-@export var jump_drag_threshold: float = -50.0
-@export var tap_max_duration: float = 0.2
-@export var tap_max_movement: float = 10.0
+var trackpad_v_ticks: int = 0
+var trackpad_v_last_tick_time: float = 0.0
+@export var trackpad_jump_tick_window: float = 0.4   # ventana entre ticks para contarlos como "racha"
+@export var trackpad_jump_tick_threshold: int = 2    # ticks seguidos hacia arriba = salto
 
 
 func _ready() -> void:
@@ -74,46 +75,33 @@ func _ready() -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		if event.pressed:
-			is_trackpad_dragging = true
-			drag_start_pos = event.position
-			drag_start_time = Time.get_ticks_msec() / 1000.0
-			has_jumped_this_drag = false
-		else:
-			is_trackpad_dragging = false
-
-			var duration: float = (Time.get_ticks_msec() / 1000.0) - drag_start_time
-			var movement: float = event.position.distance_to(drag_start_pos)
-
-			if duration <= tap_max_duration and movement <= tap_max_movement:
-				try_attack()
-
-			trackpad_direction = 0.0
-			trackpad_sprint_intensity = 0.0
-
-	if event is InputEventMouseMotion and is_trackpad_dragging:
-		var delta_x: float = event.position.x - drag_start_pos.x
-		var delta_y: float = event.position.y - drag_start_pos.y
-		var delta_ratio: float = clamp(delta_x / drag_max_distance, -1.0, 1.0)
-
-		trackpad_direction = sign(delta_ratio) if abs(delta_ratio) > 0.1 else 0.0
-		trackpad_sprint_intensity = clamp(abs(delta_ratio) * 2.0, 0.0, 2.0)
-		trackpad_active_timer = trackpad_active_duration
-
-		if delta_y < jump_drag_threshold and not has_jumped_this_drag:
-			press_jump()
-			has_jumped_this_drag = true
+	if event is InputEventMouseButton and event.pressed:
+		match event.button_index:
+			MOUSE_BUTTON_WHEEL_RIGHT:
+				trackpad_h_intensity = clamp(trackpad_h_intensity + trackpad_tick_boost, -1.0, 1.0)
+				print("Trackpad: swipe derecha, intensidad=", trackpad_h_intensity)
+			MOUSE_BUTTON_WHEEL_LEFT:
+				trackpad_h_intensity = clamp(trackpad_h_intensity - trackpad_tick_boost, -1.0, 1.0)
+				print("Trackpad: swipe izquierda, intensidad=", trackpad_h_intensity)
+			MOUSE_BUTTON_WHEEL_UP:
+				var now: float = Time.get_ticks_msec() / 1000.0
+				if now - trackpad_v_last_tick_time > trackpad_jump_tick_window:
+					trackpad_v_ticks = 0
+				trackpad_v_last_tick_time = now
+				trackpad_v_ticks += 1
+				print("Trackpad: tick arriba, acumulado=", trackpad_v_ticks)
+				if trackpad_v_ticks >= trackpad_jump_tick_threshold:
+					press_jump()
+					trackpad_v_ticks = 0
+			MOUSE_BUTTON_WHEEL_DOWN:
+				trackpad_v_ticks = 0  # cortar racha si el gesto cambia de dirección
 
 
 func _physics_process(delta: float) -> void:
 	var on_floor: bool = position.y >= screen_size.y - half_height
 
-	if trackpad_active_timer > 0.0:
-		trackpad_active_timer -= delta
-	else:
-		trackpad_direction = 0.0
-		trackpad_sprint_intensity = 0.0
+	# decaimiento de intensidad horizontal (vuelve a 0 si no hay swipe reciente)
+	trackpad_h_intensity = move_toward(trackpad_h_intensity, 0.0, trackpad_decay_per_sec * delta)
 
 	if not on_floor:
 		velocity.y += gravity * delta
@@ -125,11 +113,11 @@ func _physics_process(delta: float) -> void:
 		direction -= 1.0
 	if Input.is_action_pressed("ui_right") or ui_right_pressed:
 		direction += 1.0
-	if trackpad_direction != 0.0:
-		direction = trackpad_direction
+	if abs(trackpad_h_intensity) > 0.05:
+		direction = trackpad_h_intensity
 
-	var wants_sprint: bool = Input.is_action_pressed("sprint") or ui_sprint_pressed or trackpad_sprint_intensity > 0.1
-	var sprint_intensity: float = 1.0 if (Input.is_action_pressed("sprint") or ui_sprint_pressed) else trackpad_sprint_intensity
+	var wants_sprint: bool = Input.is_action_pressed("sprint") or ui_sprint_pressed or abs(trackpad_h_intensity) > 0.6
+	var sprint_intensity: float = 1.0 if (Input.is_action_pressed("sprint") or ui_sprint_pressed) else abs(trackpad_h_intensity)
 
 	is_sprinting = wants_sprint and direction != 0.0 and stamina > 0.0
 
