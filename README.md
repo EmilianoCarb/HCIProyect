@@ -47,13 +47,16 @@ El sistema fue diseñado considerando tres perfiles con capacidades y preferenci
 
 ### Resumen Comparativo de Acciones
 
-| Acción | Modalidad 1: Teclado | Modalidad 2: Trackpad (2 Dedos) | Modalidad 3: Botones UI (Táctil / Cursor) |
+| Acción | Modalidad 1: Solo Teclado | Modalidad 2: Solo Gestos Trackpad (2 Dedos) | Modalidad 3: Solo Botones UI (Táctil / Cursor) |
 |---|---|---|---|
-| **Moverse (Caminar)** | Flechas `◀` `▶` o `A` / `D` | Swipe suave horizontal | Clic / Toque sostenido en `◀` o `▶` |
-| **Correr (Sprint)** | Mantener tecla `Shift` | Swipe rápido horizontal (supera umbral) | Clic / Toque sostenido en `⚡ Sprint` |
-| **Saltar** | Flecha `▲`, `W` o barra `Espacio` | Ráfaga corta de swipe hacia arriba | Clic / Toque en `▲ Saltar` |
-| **Golpe / Ataque** | Clic izquierdo del mouse | Clic de ataque | Clic / Toque en `⚔ Golpe` |
-| **Invertir Trackpad** | N/A | Ajustable en vivo con botón superior derecho | Botón `Trackpad: Natural / Invertido` |
+| **Moverse (Caminar)** | Flechas `◀` `▶` o `A` / `D` | Deslizamiento suave horizontal | Clic / Toque sostenido en `◀` o `▶` |
+| **Correr (Sprint)** | Mantener tecla `Shift` | Deslizamiento rápido horizontal | Clic / Toque sostenido en `⚡ Sprint` |
+| **Saltar** | Flecha `▲`, `W` o barra `Espacio` | Deslizamiento rápido hacia **arriba** | Clic / Toque en `▲ Saltar` |
+| **Golpe / Ataque** | Tecla `J` o `Z` (o Clic izq) | Deslizamiento rápido hacia **abajo** | Clic / Toque en `⚔ Golpe` |
+| **Invertir Sentido Trackpad** | N/A | Ajustable en vivo con botón superior | Botón `Trackpad: Natural / Invertido` |
+
+> [!IMPORTANT]
+> **Paridad Completa de Control:** Las tres modalidades son **100% autosuficientes**. Un usuario puede jugar de principio a fin utilizando **únicamente el teclado** (sin tocar el ratón ni la pantalla), **únicamente gestos sobre el trackpad** (sin pulsar teclas ni clics físicos) o **únicamente la interfaz táctil en pantalla**.
 
 > [!NOTE]
 > **Adaptabilidad de Sistema:** Los sistemas operativos manejan la dirección del scroll ("desplazamiento natural" invertido) de manera dispar según las preferencias del usuario. La interfaz incluye un botón en tiempo de ejecución (`Trackpad: Natural (ON/OFF)`) para que cualquier participante de prueba calibre el sentido del movimiento al instante sin requerir modificar ajustes del sistema ni reconfigurar el código.

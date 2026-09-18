@@ -49,10 +49,12 @@ var trackpad_h_last_tick_time: float = 0.0
 @export var trackpad_direction_deadzone: float = 0.1
 @export var trackpad_sprint_threshold: float = 0.75
 
-var trackpad_v_ticks: int = 0
+var trackpad_up_ticks: int = 0
+var trackpad_down_ticks: int = 0
 var trackpad_v_last_tick_time: float = 0.0
-@export var trackpad_jump_tick_window: float = 0.4
+@export var trackpad_v_tick_window: float = 0.4
 @export var trackpad_jump_tick_threshold: int = 2
+@export var trackpad_attack_tick_threshold: int = 2
 
 
 func _ready() -> void:
@@ -83,19 +85,33 @@ func _input(event: InputEvent) -> void:
 			var t: float = clamp(dt / trackpad_fast_swipe_window, 0.0, 1.0)
 			trackpad_h_intensity = sign_dir * lerp(1.0, trackpad_min_tick_intensity, t)
 
-		elif (idx == MOUSE_BUTTON_WHEEL_UP and not trackpad_natural_scroll) or (idx == MOUSE_BUTTON_WHEEL_DOWN and trackpad_natural_scroll):
-			var now2: float = Time.get_ticks_msec() / 1000.0
-			if now2 - trackpad_v_last_tick_time > trackpad_jump_tick_window:
-				trackpad_v_ticks = 0
-			trackpad_v_last_tick_time = now2
-			trackpad_v_ticks += 1
-			if trackpad_v_ticks >= trackpad_jump_tick_threshold:
-				if position.y >= screen_size.y - half_height:
-					velocity.y = jump_force
-					_play_move()
-				trackpad_v_ticks = 0
-		elif (idx == MOUSE_BUTTON_WHEEL_DOWN and not trackpad_natural_scroll) or (idx == MOUSE_BUTTON_WHEEL_UP and trackpad_natural_scroll):
-			trackpad_v_ticks = 0
+		else:
+			var is_wheel_up: bool = (idx == MOUSE_BUTTON_WHEEL_UP and not trackpad_natural_scroll) or (idx == MOUSE_BUTTON_WHEEL_DOWN and trackpad_natural_scroll)
+			var is_wheel_down: bool = (idx == MOUSE_BUTTON_WHEEL_DOWN and not trackpad_natural_scroll) or (idx == MOUSE_BUTTON_WHEEL_UP and trackpad_natural_scroll)
+
+			if is_wheel_up:
+				var now2: float = Time.get_ticks_msec() / 1000.0
+				if now2 - trackpad_v_last_tick_time > trackpad_v_tick_window:
+					trackpad_up_ticks = 0
+				trackpad_down_ticks = 0
+				trackpad_v_last_tick_time = now2
+				trackpad_up_ticks += 1
+				if trackpad_up_ticks >= trackpad_jump_tick_threshold:
+					if position.y >= screen_size.y - half_height:
+						velocity.y = jump_force
+						_play_move()
+					trackpad_up_ticks = 0
+
+			elif is_wheel_down:
+				var now3: float = Time.get_ticks_msec() / 1000.0
+				if now3 - trackpad_v_last_tick_time > trackpad_v_tick_window:
+					trackpad_down_ticks = 0
+				trackpad_up_ticks = 0
+				trackpad_v_last_tick_time = now3
+				trackpad_down_ticks += 1
+				if trackpad_down_ticks >= trackpad_attack_tick_threshold:
+					try_attack()
+					trackpad_down_ticks = 0
 
 
 func _physics_process(delta: float) -> void:
