@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://cfmkc3w7xsy1h" path="res://scripts/Player.gd" id="1_hyk8p"]
 [ext_resource type="Texture2D" uid="uid://bgq13fuqj100t" path="res://assets/sprites/backgrounds/fondo_cielo_planeta.png" id="1_ouso4"]
-[ext_resource type="Script" uid="uid://co1ywkk4wax2" path="res://scenes/main/animated_sprite_2d.gd" id="2_blune"]
+[ext_resource type="Script" path="res://scenes/main/ui.gd" id="2_uigd"]
 [ext_resource type="Texture2D" uid="uid://cvqcfanrp6t8" path="res://assets/sprites/player/fall/male_hero-fall.png" id="2_ow5a4"]
 [ext_resource type="Texture2D" uid="uid://ct17q58f506rb" path="res://assets/sprites/player/attack/male_hero-combo_1.png" id="2_yyfjg"]
 [ext_resource type="Texture2D" uid="uid://crkcntx47uvo7" path="res://assets/sprites/player/attack/male_hero-combo_1_end.png" id="3_b1x3f"]
@@ -11,7 +11,6 @@
 [ext_resource type="Texture2D" uid="uid://drqdv1fc012gt" path="res://assets/sprites/player/run/male_hero-run.png" id="5_b1x3f"]
 [ext_resource type="Texture2D" uid="uid://cy06aa2eys20l" path="res://assets/sprites/player/walk/male_hero-walk.png" id="6_a8run"]
 [ext_resource type="Texture2D" uid="uid://cf62rkdponhi0" path="res://assets/sprites/player/jump/male_hero-jump.png" id="7_b1x3f"]
-[ext_resource type="Script" uid="uid://cb7kc6g165qdg" path="res://scenes/main/camera_2d.gd" id="10_a8run"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_8biwb"]
 atlas = ExtResource("1_ouso4")
@@ -774,9 +773,7 @@ scroll_scale = Vector2(0.2, 0.2)
 position = Vector2(850, -22.99997)
 scale = Vector2(6.6850004, 6.6850004)
 sprite_frames = SubResource("SpriteFrames_npx0a")
-frame = 49
-frame_progress = 1.0
-script = ExtResource("2_blune")
+autoplay = "default"
 
 [node name="ruinas" type="Parallax2D" parent="." unique_id=1919570203]
 scroll_scale = Vector2(0.7, 0.7)
@@ -798,55 +795,108 @@ sprite_frames = SubResource("SpriteFrames_l3cfh")
 animation = &"combo_1"
 
 [node name="StaminaBar" type="ProgressBar" parent="Player" unique_id=878462334]
-custom_minimum_size = Vector2(128, 24)
-custom_maximum_size = Vector2(200, 24)
-anchors_preset = -1
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -50.0
+custom_minimum_size = Vector2(128, 16)
+offset_left = -64.0
 offset_top = -90.0
-offset_right = 78.0
-offset_bottom = -66.0
+offset_right = 64.0
+offset_bottom = -74.0
 grow_horizontal = 2
 
 [node name="Camera2D" type="Camera2D" parent="Player" unique_id=842899846]
-script = ExtResource("10_a8run")
+limit_left = 0
+limit_top = 0
+limit_right = 3000
+limit_bottom = 720
 
 [node name="UI" type="CanvasLayer" parent="." unique_id=295922570]
+script = ExtResource("2_uigd")
 
 [node name="Control" type="Control" parent="UI" unique_id=730796767]
 layout_mode = 3
-anchors_preset = 0
-offset_top = 1.0
-offset_right = 40.0
-offset_bottom = 41.0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
 
-[node name="BotonArriba" type="Button" parent="UI/Control" unique_id=1281554785]
-layout_mode = 0
-offset_right = 8.0
-offset_bottom = 8.0
+[node name="BtnLeft" type="Button" parent="UI/Control" unique_id=2139120946]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 30.0
+offset_top = -80.0
+offset_right = 95.0
+offset_bottom = -25.0
+grow_vertical = 0
+text = "◀"
 
-[node name="BotonAbajo" type="Button" parent="UI/Control" unique_id=1483443986]
-layout_mode = 0
-offset_right = 8.0
-offset_bottom = 8.0
+[node name="BtnRight" type="Button" parent="UI/Control" unique_id=1171919105]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 110.0
+offset_top = -80.0
+offset_right = 175.0
+offset_bottom = -25.0
+grow_vertical = 0
+text = "▶"
 
-[node name="BotonIzquierda" type="Button" parent="UI/Control" unique_id=2139120946]
-layout_mode = 0
-offset_right = 8.0
-offset_bottom = 8.0
+[node name="BtnJump" type="Button" parent="UI/Control" unique_id=1281554785]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -305.0
+offset_top = -80.0
+offset_right = -215.0
+offset_bottom = -25.0
+grow_horizontal = 0
+grow_vertical = 0
+text = "▲ Saltar"
 
-[node name="BotonDerecha" type="Button" parent="UI/Control" unique_id=1171919105]
-layout_mode = 0
-offset_right = 8.0
-offset_bottom = 8.0
+[node name="BtnSprint" type="Button" parent="UI/Control" unique_id=1887287070]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -205.0
+offset_top = -80.0
+offset_right = -115.0
+offset_bottom = -25.0
+grow_horizontal = 0
+grow_vertical = 0
+text = "⚡ Sprint"
 
-[node name="BotonSprint" type="Button" parent="UI/Control" unique_id=1887287070]
-layout_mode = 0
-offset_right = 8.0
-offset_bottom = 8.0
+[node name="BtnAttack" type="Button" parent="UI/Control" unique_id=934177053]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -105.0
+offset_top = -80.0
+offset_right = -15.0
+offset_bottom = -25.0
+grow_horizontal = 0
+grow_vertical = 0
+text = "⚔ Golpe"
 
-[node name="BotonAtaque" type="Button" parent="UI/Control" unique_id=934177053]
-layout_mode = 0
-offset_right = 8.0
-offset_bottom = 8.0
+[node name="ToggleTrackpad" type="Button" parent="UI/Control" unique_id=1483443986]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -270.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = 60.0
+grow_horizontal = 0
+text = "Trackpad: Natural (ON)"

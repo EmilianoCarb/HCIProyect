@@ -1,101 +1,141 @@
-# HCIProyect
+# Plataformas & Interacción: Evaluación de Modalidades de Entrada
 
-Proyecto para la materia de Interacción Humano-Computadora (HCI).
-Desarrollado en Godot 4 (GDScript).
+> **Proyecto Académico — Interacción Humano-Computadora (IHC / HCI)**  
+> Desarrollado con **Godot Engine 4 (GDScript)**.
 
-## Descripción
+---
 
-Juego de exploración/acción en 2D: un personaje se mueve libremente por un escenario de ruinas cubiertas de musgo, pudiendo correr (sprint) y atacar. Ambas acciones consumen una barra de estamina compartida que se regenera con el tiempo. El objetivo es avanzar y recolectar objetos repartidos en el nivel.
+## 1. Resumen Ejecutivo
 
-## Evaluación — Requisitos de HCI
+Este proyecto investiga cómo diferentes modalidades de interacción física afectan la experiencia de usuario, la carga motriz y la eficiencia en el control de un avatar dentro de un entorno 2D interactivo.
 
-- Movimiento libre del personaje (correr, saltar, atacar) con gestión de un recurso (estamina).
-- **2 entradas soportadas**: teclado/botones en pantalla (control discreto/binario) y gestos de trackpad (swipe de 2 dedos, control analógico — la intensidad del swipe determina qué tan fuerte es el sprint).
-- **2 salidas soportadas**: visual (animaciones del personaje, fondo parallax y barra de estamina flotante) y auditiva (sonido al moverse y al chocar con los bordes de pantalla).
-- **Comparación de experiencia de usuario entre input binario (teclado) vs. input analógico (trackpad)** para el mismo sistema de estamina y de velocidad — punto central de análisis de la materia. A diferencia del teclado (que salta directamente entre "caminar" y "correr"), el trackpad interpola la velocidad de forma continua según la intensidad del swipe, mostrando de forma tangible la diferencia entre un control binario y uno analógico.
+En los videojuegos y aplicaciones interactivas contemporáneas, la mayoría de los esquemas de control asumen una entrada **discreta (binaria)** a través de teclas (`0` o `1`). Este proyecto introduce y compara formalmente una entrada **continua (analógica)** basada en gestos sobre panel táctil (*trackpad swipe* sin clic forzado) y una entrada **asistida mediante interfaz táctil/puntero único (botones UI)** orientada a la accesibilidad.
 
-## Estructura del proyecto
+El sistema se articula alrededor de un recurso limitante común: **la estamina**, permitiendo observar de forma cuantificable cómo cada tipo de entrada influye en la precisión y dosificación del esfuerzo del usuario.
+
+---
+
+## 2. Marco Teórico de Interacción Humano-Computadora (IHC)
+
+### 2.1. Dimensionalidad y Dinámica del Input
+* **Entrada Discreta (Teclado / Botones):** Transición instantánea entre dos estados de velocidad: *caminar* ($v = 250\text{ px/s}$) y *sprint* ($v = 450\text{ px/s}$). Demanda una carga cognitiva baja en la activación, pero carece de granularidad intermedia.
+* **Entrada Continua (Trackpad Gestual):** Basada en la velocidad temporal del gesto de dos dedos. El juego mide el intervalo $\Delta t$ entre eventos consecutivos generados por el compositor:
+  $$\text{Intensidad} = \text{lerp}\left(1.0, \text{Intensidad}_{\min}, \text{clamp}\left(\frac{\Delta t}{\text{Ventana}_{\text{rápida}}}, 0, 1\right)\right)$$
+  La velocidad resultante es continua:
+  $$v = \text{lerp}(v_{\text{walk}}, v_{\text{sprint}}, |\text{Intensidad}|)$$
+  Esto permite al usuario modular su velocidad y dosificar el consumo de estamina en una escala analógica sin saltos bruscos.
+
+### 2.2. Ley de Fitts y Affordance en Pantalla
+Para la modalidad asistida en pantalla, los botones virtuales están ubicados en las esquinas inferiores (zonas de fácil alcance motor para pulgares en pantallas táctiles o baja distancia de desplazamiento de cursor con puntero único), maximizando el índice de rendimiento motriz y minimizando el tiempo de adquisición del objetivo según la formulación de Fitts:
+$$MT = a + b \cdot \log_2\left(\frac{2D}{W}\right)$$
+
+---
+
+## 3. Mapeo de Entradas por Perfiles de Usuario (Personas)
+
+El sistema fue diseñado considerando tres perfiles con capacidades y preferencias físicas distintas:
+
+| Perfil de Usuario | Canal de Entrada Preferido | Justificación de IHC / Accesibilidad |
+|---|---|---|
+| **Persona A: Usuario de Escritorio Estándar** | **Teclado Físico** (`WASD` / Flechas + `Shift` + Espacio) | Respuesta táctil mecánica inmediata, bajo índice de error por rebote, ideal para usuarios acostumbrados a controles tradicionales de videojuegos. |
+| **Persona B: Usuario de Portátil (Laptop)** | **Trackpad Multitáctil** (Swipe de 2 dedos sin clic) | Reduce el estrés en tendones y articulaciones al eliminar la necesidad de clics mecánicos sostenidos. Permite control de velocidad gradual con gestos naturales de deslizamiento. |
+| **Persona C: Accesibilidad / Puntero Único / Táctil** | **Botones Virtuales en Pantalla** + **Toggle de Trackpad** | Pensado para personas con movilidad reducida en dedos que emplean emuladores de ratón, dispositivos *head-tracking* de un solo botón o pantallas táctiles. |
+
+---
+
+## 4. Esquema de Controles
+
+### Resumen Comparativo de Acciones
+
+| Acción | Modalidad 1: Teclado | Modalidad 2: Trackpad (2 Dedos) | Modalidad 3: Botones UI (Táctil / Cursor) |
+|---|---|---|---|
+| **Moverse (Caminar)** | Flechas `◀` `▶` o `A` / `D` | Swipe suave horizontal | Clic / Toque sostenido en `◀` o `▶` |
+| **Correr (Sprint)** | Mantener tecla `Shift` | Swipe rápido horizontal (supera umbral) | Clic / Toque sostenido en `⚡ Sprint` |
+| **Saltar** | Flecha `▲`, `W` o barra `Espacio` | Ráfaga corta de swipe hacia arriba | Clic / Toque en `▲ Saltar` |
+| **Golpe / Ataque** | Clic izquierdo del mouse | Clic de ataque | Clic / Toque en `⚔ Golpe` |
+| **Invertir Trackpad** | N/A | Ajustable en vivo con botón superior derecho | Botón `Trackpad: Natural / Invertido` |
+
+> [!NOTE]
+> **Adaptabilidad de Sistema:** Los sistemas operativos manejan la dirección del scroll ("desplazamiento natural" invertido) de manera dispar según las preferencias del usuario. La interfaz incluye un botón en tiempo de ejecución (`Trackpad: Natural (ON/OFF)`) para que cualquier participante de prueba calibre el sentido del movimiento al instante sin requerir modificar ajustes del sistema ni reconfigurar el código.
+
+---
+
+## 5. Mecánicas de Juego y Ciclo de Feedback
+
+1. **Gestión de Estamina:**
+   - La estamina máxima es $100$.
+   - **Sprint:** Consume $30\text{ unidades/segundo} \times \text{Intensidad}$ (en trackpad, la tasa de gasto es proporcional a la velocidad real).
+   - **Ataque:** Costo fijo discreto de $25\text{ unidades}$.
+   - **Regeneración:** Tras un retraso de inactividad de $0.2\text{ s}$, se recupera a razón de $25\text{ unidades/segundo}$.
+2. **Feedback Visual Adaptativo:**
+   - Una barra de progreso (`ProgressBar`) permanece invisible cuando el recurso está al $100\%$, reduciendo el ruido visual (*clutter* cognitivo).
+   - Aparece sobre el personaje automáticamente al consumir energía y refleja el valor exacto en tiempo real.
+3. **Profundidad y Cámara:**
+   - Fondo con capas `Parallax2D` diferenciadas (cielo planetario a escala $0.2$ y ruinas de primer plano a escala $0.7$) para proveer retroalimentación visual de velocidad y desplazamiento relativo.
+   - `Camera2D` con límites automáticos de nivel ($0$ a $3000\text{ px}$ en horizontal).
+
+---
+
+## 6. Arquitectura del Proyecto (Godot 4)
+
+El proyecto sigue una arquitectura **limpia y desacoplada**, guiada por la eliminación sistemática de sobreingeniería:
+
 ```
 HCIProyect/
-├── project.godot
+├── project.godot           # Configuración del motor, mapeo de acciones de entrada
 ├── scenes/
-│ ├── main/ # main.tscn — escena principal
-│ ├── player/ # Player.tscn
-│ └── ui/ # botones UI, barra de estamina
+│   └── main/
+│       ├── main.tscn       # Escena principal (Fondo, Parallax, Player, Cámara, UI)
+│       └── ui.gd           # Capa UI: conexión unificada a Input actions y toggle de trackpad
 ├── scripts/
-│ ├── Player.gd # movimiento, estamina, ataque, animaciones, input trackpad
-│ └── PlayerCamera.gd # límites de cámara siguiendo al personaje
-├── assets/
-│ ├── sprites/
-│ │ ├── hero/ # Ozzbit Games — idle, walk, run, jump, fall, combo_1, combo_1_end
-│ │ ├── backgrounds/ # fondo cielo+planeta y ruinas musgosas (parallax)
-│ │ ├── tileset/ # Mossy Tileset (plataformas, decoraciones, hazards)
-│ │ ├── enemies/ # Slimes (Orange, Green)
-│ │ └── plants/ # Plant Animations (decoración ambiental)
-│ ├── audio/
-│ │ ├── sfx/
-│ │ └── music/
-│ └── fonts/
-└── docs/ # capturas, créditos, informe
+│   └── Player.gd           # Físicas, estamina, animaciones y decodificación de gestos de trackpad
+└── assets/
+    ├── sprites/            # Spritesheets de personaje y escenarios
+    └── audio/              # Efectos auditivos
 ```
 
-## Cómo correr el proyecto
+### Principios de Implementación
+* **Pipeline Unificado de Entrada:** La interfaz de usuario no manipula variables internas del jugador; inyecta eventos nativos a través de `Input.action_press()` y `Input.action_release()`. Esto desacopla totalmente la lógica de presentación de la lógica de juego.
+* **Aprovechamiento Nativo del Motor:** Los límites de cámara y la reproducción automática de animaciones de fondo se gestionan mediante propiedades nativas de los nodos (`Camera2D.limit_*`, `AnimatedSprite2D.autoplay`), evitando scripts delegadores innecesarios.
 
-1. Abre Godot 4.x.
-2. Importa la carpeta del proyecto (`project.godot`).
-3. Ejecuta la escena `scenes/main/main.tscn`.
+---
 
-## Controles
+## 7. Metodología de Evaluación con Usuarios
 
-**Teclado:**
-- Flechas / `A` `D`: moverse izquierda/derecha.
-- Flecha arriba / `W`: saltar.
-- `Shift`: sprint (mantener presionado, consume estamina).
-- Click izquierdo / tecla de ataque: atacar (consume estamina).
+Para el informe final de la materia de IHC, se recomienda el siguiente protocolo de prueba:
 
-**Trackpad (swipe de 2 dedos, sin necesidad de click):**
-- Swipe izquierda/derecha: moverse. La intensidad del swipe controla la velocidad de forma continua entre "caminar" y "correr"; por encima de un umbral entra en sprint real y empieza a consumir estamina.
-- Swipe hacia arriba: saltar (se detecta por una racha corta de ticks de scroll consecutivos).
-- El ataque **no** se soporta por gesto de trackpad puro (un tap sin movimiento no genera ningún evento detectable); usar click o el botón de UI.
+### 7.1. Diseño Experimental (Within-Subjects A/B)
+Cada participante realiza un recorrido idéntico con ambas modalidades principales en orden contrabalanceado para mitigar el sesgo de aprendizaje:
+* **Condición A:** Teclado físico convencional.
+* **Condición B:** Trackpad analógico con swipe de dos dedos.
 
-> **Nota técnica:** Godot no recibe el swipe de 2 dedos como gesto nativo (`InputEventPanGesture`) de forma confiable en Linux ni Windows — el compositor del sistema lo traduce a eventos de rueda del mouse (`MOUSE_BUTTON_WHEEL_*`). El juego escucha esos eventos y acumula "ticks" para simular intensidad analógica. Además, la preferencia de sistema **"desplazamiento natural"** (Ajustes → Panel táctil) invierte el sentido de esos eventos; esto se compensa con la propiedad exportada `trackpad_natural_scroll` en `Player.gd`, que debe coincidir con la configuración del sistema operativo de quien pruebe el juego. Se documenta como limitación conocida y punto de análisis de HCI: es una preferencia de accesibilidad del SO que el juego no puede leer automáticamente.
+### 7.2. Métricas de Recolección
 
-**Botones en pantalla:** disponibles como alternativa táctil a los controles de arriba (mover, saltar, sprint, atacar).
+| Tipo de Métrica | Variable Medida | Instrumento / Método |
+|---|---|---|
+| **Cuantitativa (Eficiencia)** | Tiempo total de completación de recorrido | Cronometraje automático |
+| **Cuantitativa (Precisión)** | Número de veces que la estamina se agotó involuntariamente ($= 0$) | Registro por software |
+| **Cuantitativa (Adquisición)** | Tasa de acierto al saltar obstáculos en el primer intento | Conteo de reintentos |
+| **Cualitativa (Carga de Trabajo)** | Esfuerzo físico, mental y frustración percibida | Escala NASA-TLX |
+| **Cualitativa (Usabilidad)** | Nivel general de satisfacción del sistema | Cuestionario SUS (*System Usability Scale*) |
 
-## Mecánica
+---
 
-- El personaje se mueve libremente dentro de los límites de la pantalla.
-- La estamina se gasta al hacer sprint (más rápido si el swipe del trackpad es más intenso) y al atacar; se regenera automáticamente tras un breve tiempo sin usarse.
-- Una barra de estamina flotante aparece sobre el personaje solo cuando no está al 100%, y desaparece al regenerarse por completo.
-- El ataque tiene una animación de golpe seguida de una de recuperación antes de poder moverse con normalidad de nuevo.
-- El fondo usa dos capas `Parallax2D` (cielo con planeta + ruinas en primer plano) para dar sensación de profundidad.
+## 8. Cómo Ejecutar el Proyecto
 
-## Créditos
+1. Descargar e instalar **Godot Engine 4.x** (Standard o .NET, Forward+ / Mobile compatible).
+2. Clonar este repositorio:
+   ```bash
+   git clone https://github.com/EmilianoCarb/HCIProyect.git
+   ```
+3. En el Administrador de Proyectos de Godot, pulsar **Importar** y seleccionar el archivo `project.godot`.
+4. Presionar `F5` o pulsar el botón **Reproducir** para ejecutar la escena `scenes/main/main.tscn`.
 
-- **Animaciones del personaje:** Ozzbit Games — [ozzbit-games.itch.io](https://ozzbit-games.itch.io) (versión gratuita, uso no comercial, créditos requeridos).
-- **Fondo (cielo + planeta):** generado proceduralmente para este proyecto, inspirado en la paleta de assets de referencia tipo Deep-Fold.
-- **Tileset de ruinas musgosas:** Mossy Tileset — [maaot.itch.io/mossy-cavern](https://maaot.itch.io/mossy-cavern).
-- **Enemigos (slimes):** Slimes (Orange, Green) — *pendiente confirmar autor/licencia exacta antes de la entrega.*
-- **Plantas decorativas:** Plant Animations — *pendiente confirmar autor/licencia exacta antes de la entrega.*
-- **Assets adicionales de referencia:** anokolisa — [Moon Graveyard](https://anokolisa.itch.io/moon-graveyard), [Sidescroller Pixelart Forest 16x16](https://anokolisa.itch.io/sidescroller-pixelart-sprites-asset-pack-forest-16x16).
+---
 
-> ⚠️ Antes de la entrega final, completar este apartado con el autor y tipo de licencia exacto de cada asset usado (Slimes, Plant Animations, y cualquier otro pack sumado), siguiendo el mismo formato que Ozzbit Games. Revisar especialmente si alguno requiere atribución obligatoria o restringe uso comercial/educativo.
+## 9. Créditos y Licencias
 
-## Roadmap del semestre
-
-- [x] Movimiento libre con teclado
-- [x] Gravedad y salto
-- [x] Sistema de estamina (sprint + ataque)
-- [x] Animaciones del personaje (idle, walk, run, jump, fall, attack)
-- [x] Input por trackpad (swipe analógico vía scroll wheel)
-- [x] Barra de estamina flotante en UI
-- [x] Fondo con parallax (cielo/planeta + ruinas musgosas)
-- [ ] Objetos recolectables en el nivel
-- [ ] Enemigos básicos (slimes) con colisión/daño
-- [ ] Escenario/nivel más allá de una sola pantalla (tileset de ruinas + cámara con límites)
-- [ ] Sonido adicional (ataque, recolección)
-- [ ] Pruebas de usuario (HCI) comparando teclado vs. trackpad
-
-## About
-
-Sin descripción, sitio web, ni topics.
+* **Animaciones de Personaje:** Ozzbit Games ([ozzbit-games.itch.io](https://ozzbit-games.itch.io)) — Licencia de uso no comercial con atribución.
+* **Fondo (Cielo y Planeta):** Arte procedural pixel art para ambientación de ciencia ficción.
+* **Tileset de Entorno:** Maaot (*Mossy Cavern Tileset*, [maaot.itch.io/mossy-cavern](https://maaot.itch.io/mossy-cavern)).
+* **Investigación y Desarrollo:** Proyecto desarrollado para la materia de Interacción Humano-Computadora.
