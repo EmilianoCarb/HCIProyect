@@ -30,9 +30,8 @@ signal stamina_changed(current: float, max: float)
 @onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var stamina_bar: ProgressBar = $StaminaBar
 
-var screen_size: Vector2
-var half_height: float = 64.0
-var half_width: float = 40.0
+# AHORA — ya no necesitás screen_size/half_height/half_width para el piso,
+# pero OJO: el jump_stamina_cost y demás siguen igual, no tocamos eso.
 
 # --- Input alternativo desde botones UI ---
 var ui_left_pressed: bool = false
@@ -89,7 +88,6 @@ var trackpad_v_last_tick_time: float = 0.0
 func _ready() -> void:
 	audio_move.stream = move_sound
 	audio_bump.stream = bump_sound
-	screen_size = get_viewport_rect().size
 	stamina = max_stamina
 	sprite.play("idle")
 	sprite.animation_finished.connect(_on_animation_finished)
@@ -152,15 +150,8 @@ func _input(event: InputEvent) -> void:
 
 
 func _physics_process(delta: float) -> void:
-	var on_floor: bool = position.y >= screen_size.y - half_height
-
-	# decaimiento de intensidad horizontal (vuelve a 0 si no hay swipe reciente)
-	trackpad_h_intensity = move_toward(trackpad_h_intensity, 0.0, trackpad_decay_per_sec * delta)
-
-	if not on_floor:
+	if not is_on_floor():
 		velocity.y += gravity * delta
-	else:
-		velocity.y = 0
 
 	var direction: float = 0.0
 	var using_trackpad: bool = false
@@ -205,7 +196,7 @@ func _physics_process(delta: float) -> void:
 
 	var wants_jump: bool = Input.is_action_just_pressed("ui_up") or ui_jump_requested
 	ui_jump_requested = false
-	if wants_jump and on_floor:
+	if wants_jump and is_on_floor():
 		velocity.y = jump_force
 		_play_move()
 
@@ -213,8 +204,7 @@ func _physics_process(delta: float) -> void:
 		try_attack()
 
 	move_and_slide()
-	_clamp_to_screen()
-	_update_animation(direction, on_floor)
+	_update_animation(direction)
 	_update_stamina_bar_position()
 
 
@@ -234,23 +224,7 @@ func _on_animation_finished() -> void:
 	elif sprite.animation == "combo_1_end":
 		is_attacking = false
 
-
-func _clamp_to_screen() -> void:
-	var clamped_x: float = clamp(position.x, half_width, screen_size.x - half_width)
-	var clamped_y: float = clamp(position.y, half_height, screen_size.y - half_height)
-	var hit_edge: bool = clamped_x != position.x or clamped_y != position.y
-
-	position.x = clamped_x
-	position.y = clamped_y
-
-	if position.y >= screen_size.y - half_height:
-		velocity.y = 0
-
-	if hit_edge:
-		_play_bump()
-
-
-func _update_animation(direction: float, on_floor: bool) -> void:
+func _update_animation(direction: float) -> void:
 	if is_attacking:
 		return
 
@@ -261,7 +235,7 @@ func _update_animation(direction: float, on_floor: bool) -> void:
 	if direction != 0.0:
 		sprite.flip_h = direction < 0
 
-	if not on_floor:
+	if not is_on_floor():
 		if velocity.y < 0:
 			sprite.play("jump")
 		else:
